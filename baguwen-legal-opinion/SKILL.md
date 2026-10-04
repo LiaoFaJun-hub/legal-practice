@@ -1,11 +1,11 @@
 ---
 name: baguwen-legal-opinion
 description: "Load when 用户要求按八股（破题/承题/起讲/入手/起股/中股/后股/束股）范式生成法律意见书、做零跳跃法律分析、防要件遗漏、或对已有法律分析做幻觉审计。触发：按八股写法律意见书；八股体意见书；法律意见书；案件分析意见；诉讼策略分析；合规审查意见；零跳跃推理；防要件遗漏；对抗式法律分析；法律幻觉核验。不适用于：普法问答（走精简三段模式）；合同条款比对（转 contract-diff）；纯法条检索（转 legal-research-analyst）；文书格式化（转 legal-text-format）。"
-homepage: https://github.com/LiaoFaJun-hub?tab=following
+homepage: https://github.com/liaofajun
 author: LiaoFaJun（微信公众号：趣味聊法）
 version: 1.2.0
 license: CC BY-NC-SA 4.0，完整协议见 LICENSE.txt
-label: 法律意见书
+label: 八股文体法律意见书
 agent_created: true
 ---
 
