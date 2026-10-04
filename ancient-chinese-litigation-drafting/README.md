@@ -1,7 +1,7 @@
 # 古代讼师文书撰写 · 技能交付说明
 
 > 交付日期：2026-10-04（v1.1.0 三路审计修订）｜ 技能 ID：`ancient-chinese-litigation-drafting` ｜ 中文名：古代讼师文书撰写
-> 安装位置：用户级技能库 `~/.workbuddy/skills/ancient-chinese-litigation-drafting/`
+> 安装位置：用户级技能库 `~/.workbuddy/skills/ancient-chinese-litigation-drafting/` `~/.claude/skills/ancient-chinese-litigation-drafting/`等
 > 素材来源：用户提供的《法源文献总目》（4 分册＋总纲）、《古代讼师文书 Skill 规格》（4 朝代包＋设计总纲）、《古代讼师文书的各朝法律依据》
 
 ---
