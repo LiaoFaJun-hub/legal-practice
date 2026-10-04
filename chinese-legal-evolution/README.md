@@ -2,7 +2,7 @@
 
 > 交付日期：2026-10-04（v1.2.0 图示载体分档：框线／Mermaid／SVG）
 > 技能 ID：`chinese-legal-evolution` ｜ 中文名：中国法律沿革比较
-> 安装位置：用户级 `~/.workbuddy/skills/chinese-legal-evolution/`
+> 安装位置：用户级 `~/.workbuddy/skills/chinese-legal-evolution/` `~/.claude/skills/ancient-chinese-litigation-drafting/`等
 > 关联技能：`ancient-chinese-litigation-drafting`（古代讼师文书撰写）——平级互引，非上下游依赖
 
 ---
