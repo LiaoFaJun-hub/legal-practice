@@ -124,6 +124,22 @@ def main():
         s(rep, "澄清已登记", "P1", True,
           "已登记澄清/假设声明" if has_intake else "待查明项较少，可免")
 
+    # 门0-B 定向采集四件套（opt-in：仅当推理轨标记"定向采集"才校验，不误伤未升档旧轨）
+    if "定向采集" in text:
+        miss0b = [k for k in ("程序信息表", "时间线", "证据线索表", "缺口归类") if k not in text]
+        s(rep, "门0B-采集四件套", "P1", not miss0b,
+          ("缺：" + "、".join(miss0b)) if miss0b else "定向采集四件套齐")
+    else:
+        s(rep, "门0B-采集四件套", "P1", True, "未升档（无定向采集标记），免检")
+
+    # 补访环：有补访记录时，须有重分层去向（防止新事实绕过第三段直改判定）
+    if "补访记录" in text:
+        s(rep, "门05-补访重分层", "P1", "重分层" in text,
+          "补访记录已含重分层去向" if "重分层" in text
+          else "有补访记录但未见'重分层'去向（补访新事实须回第三段重分层）")
+    else:
+        s(rep, "门05-补访重分层", "P1", True, "未触发补访，免检")
+
     raise SystemExit(rep.emit())
 
 

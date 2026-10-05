@@ -3,7 +3,7 @@ name: baguwen-legal-opinion
 description: "Load when 用户要求按八股（破题/承题/起讲/入手/起股/中股/后股/束股）范式生成法律意见书、做零跳跃法律分析、防要件遗漏、或对已有法律分析做幻觉审计。触发：按八股写法律意见书；八股体意见书；法律意见书；案件分析意见；诉讼策略分析；合规审查意见；零跳跃推理；防要件遗漏；对抗式法律分析；法律幻觉核验。不适用于：普法问答（走精简三段模式）；合同条款比对（转 contract-diff）；纯法条检索（转 legal-research-analyst）；文书格式化（转 legal-text-format）。"
 homepage: https://github.com/liaofajun
 author: LiaoFaJun（微信公众号：趣味聊法）
-version: 1.2.0
+version: 1.3.0
 license: CC BY-NC-SA 4.0，完整协议见 LICENSE.txt
 label: 八股文体法律意见书
 agent_created: true
@@ -40,18 +40,18 @@ agent_created: true
 ## SOP 总览
 
 ```
-① 分诊定档 + 门0 前置澄清 ──→ ② 破题…入手（门1/门2）──→ ③ 起股 + 中股(子Agent隔离)
-        ▲                                                          │
+① 分诊定档 + 门0-A 定向澄清 ──→ ② 破题…入手（门1/门2）──→ ③ 起股 + 中股(子Agent隔离)
+        ▲     └─门0-B 定向采集（条件升档·经同意·四件套）              │
         │                                                          ▼
-   假设声明/模式                                         ④ 后股权衡 + 束股收敛
-        │                                                          │
+   门0.5 补访环（第五段缺口回问·经同意）                     ④ 后股权衡 + 束股收敛
+        │   新事实→第三段重分层→判定更新→重校验                      │
         └──────────── 校验 lane（P0 回退）◄─────────────────────────┘
                                    │
                     ⑤ 校验(推理轨) ──→ ⑥ 行文改写 + 交付校验(行文轨)
 ```
 
-- **数据传递**：门0 的假设声明 → 第三段 U 类 → 第八段存疑清单 → 行文轨开头；段间以"交接包"传递（结构化对象，含清单与判定结果）。
-- **判断分支**：门1/门2 条件触发；校验 P0 回退（上限 2 次转人工）。
+- **数据传递**：门0-A 假设声明 → 第三段 U 类 → 第八段存疑清单 → 行文轨开头；门0-B 四件套 → 第零段＋第三段预填（时间线两栏即 F/S 预分层、证据线索表即 U 表"转为已证所需证据"预填、缺口归类喂给第六段抗辩预置）；门0.5 补访新事实 → 第三段重分层 → 判定更新；段间以"交接包"传递（结构化对象，含清单与判定结果）。
+- **判断分支**：门1/门2 条件触发；门0-B/门0.5 条件触发且均须委托人同意；校验 P0 回退（上限 2 次转人工）。
 - **双轨制**：推理轨（结构化、机器校验）→ 行文轨（律师文体、交付物）。校验压推理轨，成品做行文轨。
 
 ## 输入
@@ -61,12 +61,13 @@ agent_created: true
 | 案件事实 / 材料 | 必需 | 用户叙述、合同、通知、凭证等；可仅有口头咨询 |
 | 咨询范围 / 偏好 | 可选 | 关注点、法域、时点、篇幅 |
 | 检索层 | 可选 | 有法律检索 MCP 则走【全检索模式】；无则走【仅用户提供模式】 |
+| 咨询交互层 | 可选 | 有交互提问工具 → 门0-A/B＋门0.5 补访环可用；无 → 文本降级（见 intake.md §1） |
 
 ## 输出
 
 | 输出物 | 格式 | 说明 |
 |---|---|---|
-| 推理轨 | Markdown（含第零段+八段） | 结构化，供脚本校验；含四态符号与编号 |
+| 推理轨 | Markdown（含第零段+八段） | 结构化，供脚本校验；含四态符号与编号；第零段含澄清问答与（如有）定向采集四件套/补访记录 |
 | 行文轨 | 律师文体《法律分析意见书》 | 八章 + 附录一引用索引/附录二人审清单/附录三自检表 |
 | 校验报告 | JSON（P0/P1/P2） | 三个脚本的输出 |
 
@@ -74,13 +75,13 @@ agent_created: true
 
 > 引用文件均在技能目录下；`references/` 存放知识与条件性文档，`templates/` 存放产出模板，`scripts/` 存放确定性校验。
 
-### 步骤 1 · 分诊定档 + 门0 前置澄清
+### 步骤 1 · 分诊定档 + 门0 前置澄清（两相＋补访环）
 
-- **目标**：确定模式（全八段/精简三段/场景特化），并锁定会使结论反转的决定性事实，避免全篇返工。
-- **动作**：读 [references/scenario-fit.md](references/scenario-fit.md) 定档；执行 [references/intake.md](references/intake.md) 门0：先对用户**说明目的**，再用 AskUserQuestion 提 ≤5 问（每问必含"暂不清楚"选项）。
-- **判断逻辑**：**如果** 环境无交互提问工具，**则** 以文本列出问题并暂停（禁止跳过门0硬跑）；**如果** 用户答"暂不清楚"，**则** 登记假设声明，按**保守假设**（非对用户有利）推进。
-- **交付**：第零段·澄清（问题 / 用户回答 / 假设声明）。
-- **质量检查点**：目的已说明；每问含"暂不清楚"；假设已登记。
+- **目标**：确定模式（全八段/精简三段/场景特化）与采集分档，并锁定会使结论反转的决定性事实，避免全篇返工。
+- **动作**：读 [references/scenario-fit.md](references/scenario-fit.md) 定档（含采集分档）；执行 [references/intake.md](references/intake.md) 门0-A：先**说明目的**，再提 ≤5 问（必含**程序坐标**与**时效红线**两个强制项；每问必含"暂不清楚"，入清单前过 [references/fact-elicitation.md](references/fact-elicitation.md) §三·五把筛子）；答后执行收口微仪式（复述确认＋"还有什么我没问到的"）。
+- **判断逻辑**：**如果** 环境无交互提问工具，**则** 以文本列出问题并暂停（禁止跳过门0硬跑）；**如果** 用户答"暂不清楚"，**则** 登记假设声明，按**保守假设**（非对用户有利）推进；**如果** 触发门0-B 升档条件且经委托人同意，**则** 按 fact-elicitation.md 执行定向采集（九类框架 × T型漏斗 × 证据落地六问），产出四件套（程序信息表/事实时间线/证据线索表/缺口归类）并通过收口自检＋三句话复述。
+- **交付**：第零段·澄清（问题 / 回答 / 采集四件套（如有）/ 假设声明）。
+- **质量检查点**：目的已说明；每问过五把筛子且含"暂不清楚"；程序坐标与时效红线已问；升档时收口自检与三句话复述已过。
 
 ### 步骤 2 · 破题至入手（含门1 / 门2）
 
@@ -95,7 +96,7 @@ agent_created: true
 - **目标**：逐要件四态判定；从相对方视角穷尽抗辩。
 - **动作**：第五段按 A1..An 逐项四态判定（✓◐✗?）并做覆盖自检；**必须** 用**子 Agent 隔离**执行第六段，仅喂「分层事实表 + 要件清单 + 法条锚点 + 判定符号摘要」，**不得**喂第五段推理文本（R3）。
 - **工具**：Task 子 Agent；[references/redlines.md](references/redlines.md) 抗辩穷尽树。
-- **判断逻辑**：**如果** 第五段存在 ✓成立，**则** 第六段须对每个 ✓ 至少攻击一次；**如果** 某类抗辩无内容，**则** 显式写"经检索未发现可行抗辩事由"，不得留空。
+- **判断逻辑**：**如果** 第五段存在 ✓成立，**则** 第六段须对每个 ✓ 至少攻击一次；**如果** 某类抗辩无内容，**则** 显式写"经检索未发现可行抗辩事由"，不得留空；**如果** 判定出现 ？/◐ 且缺口属"可向当事人问出的事实"，**则** 触发门0.5 补访环（经同意先补问，新事实回第三段重分层），而非径行落保守假设。
 - **交付**：交接包 ⑤⑥。
 - **质量检查点**：判定集合 == 要件集合（R2）；五类抗辩齐；漏洞清单 ≥2。
 
@@ -134,12 +135,13 @@ agent_created: true
 
 | 异常 | 检测方式 | 处理策略 | 严重性 |
 |---|---|---|---|
-| 无交互提问工具（门0） | 环境探测 | 文本列出问题并暂停，等回复再开干 | 阻断（不跳过门0） |
+| 无交互提问工具（门0-A/0-B） | 环境探测 | 文本列出问题并暂停，等回复再开干 | 阻断（不跳过门0） |
 | 检索层不可用 | MCP 探测失败 | 切【仅用户提供模式】，法条标"未检索到/待核验"，**禁**回退模型记忆 | 降级 |
 | 要件库未命中 | element-library 未命中 | 由法条反推要件，并在存疑清单登记"框架未经要件库校验" | 降级 |
 | 校验出现 P0 | 脚本输出 | 回退对应段重跑，上限 2 次后转人工 | 阻断 |
 | 校验 P1（fail-closed 占位） | 脚本输出 | 记录并如实标注，不作阻断 | 降级 |
 | 推理轨缺失某段 | check_dod 报"存在性" P0 | 补做该段后重跑 | 阻断 |
+| 澄清深度不足 | 第五段 ？/◐ 集中、U 表缺口超阈值、门0-A ≥2 项"暂不清楚" | 触发门0-B 升档或门0.5 补访环（均须同意）；不同意则按保守假设登记推进 | 回环 |
 
 ## Gotcha清单
 
@@ -162,6 +164,7 @@ agent_created: true
 | `legal-text-format` | 法律文本格式化 | 请求为排版转换时，**转出** |
 | `legal-opinion-generator` | 通用法律意见书（流派路线） | 用户不需八股协议时可用；本技能是其八股增强变体 |
 | `legal-proposal-generator` | 多类法律服务文档 | 需生成咨询报告/方案等非意见书时 |
+| `lawyer-fact-elicitation` | 律师事实采集（当事人侧） | **已内化**为 [references/fact-elicitation.md](references/fact-elicitation.md)——门0-B/门0.5 直接使用、不外调；语音两段式/完整状态信号表/伦理边界等深水区仍读原技能 |
 
 > 本技能**不强制**调用其他技能；上表主要用于**调用边界判定与转出**。
 
@@ -174,13 +177,15 @@ agent_created: true
 ## 铁律
 
 **MUST**
-- 开干前**必须**过门0：先说明目的、再提 ≤5 问、登记假设。
+- 开干前**必须**过门0-A：先说明目的、再提 ≤5 问（必含程序坐标与时效红线、每问过五把筛子）、答后执行收口微仪式、登记假设。
+- 触发门0-B 升档条件时**必须**先征得同意再深采；触发门0.5 补访时**必须**先征得同意再回问，补访新事实**必须**回第三段重分层。
 - 第六股**必须**用子 Agent 隔离（R3）；第五股**必须**全要件遍历（R2）。
 - 三清单**必须**与结论同屏（R4）；结论**必须**条件式。
 - 法条引用**必须**四元组回填或显式标"待核验"（R1）。
 
 **MUST NOT**
 - 禁止凭模型记忆输出条文号或原文。
+- 禁止引导性提问与双捆提问；不得用"为什么"作主追武器；不得借采集或补访教当事人统一口径。
 - 禁止把单方陈述(S)当作已证事实(F)支撑"成立"判定。
 - 禁止给无条件结论或确定数值（胜诉率、赔偿额）。
 - 禁止把机械符号（`A1`/`✓`/`C1`/半角`?`）外泄到行文轨正文。
@@ -191,7 +196,7 @@ agent_created: true
 
 ## 文件索引（附录）
 
-**references/**：[philosophy.md](references/philosophy.md) · [intake.md](references/intake.md) · [protocol.md](references/protocol.md) · [stage-rules.md](references/stage-rules.md) · [redlines.md](references/redlines.md) · [retrieval-adapter.md](references/retrieval-adapter.md) · [element-library.md](references/element-library.md) · [scenario-fit.md](references/scenario-fit.md) · [writing-style.md](references/writing-style.md) · [experience-log.md](references/experience-log.md)
+**references/**：[philosophy.md](references/philosophy.md) · [intake.md](references/intake.md) · [fact-elicitation.md](references/fact-elicitation.md) · [protocol.md](references/protocol.md) · [stage-rules.md](references/stage-rules.md) · [redlines.md](references/redlines.md) · [retrieval-adapter.md](references/retrieval-adapter.md) · [element-library.md](references/element-library.md) · [scenario-fit.md](references/scenario-fit.md) · [writing-style.md](references/writing-style.md) · [experience-log.md](references/experience-log.md)
 
 **templates/**：[stage-outputs.md](templates/stage-outputs.md) · [opinion-template.md](templates/opinion-template.md) · [opinion-prose-example.md](templates/opinion-prose-example.md) · [one-page-summary.md](templates/one-page-summary.md)
 
